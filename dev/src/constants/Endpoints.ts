@@ -44,6 +44,8 @@ export enum ProjectEndpoints {
     CLOSE = "close",
     UNBIND = "unbind",
 
+    UPLOAD = "remote-bind/upload",
+
     CAPABILITIES = "capabilities",
 }
 

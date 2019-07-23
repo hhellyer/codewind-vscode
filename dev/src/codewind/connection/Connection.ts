@@ -48,7 +48,8 @@ export default class Connection implements vscode.QuickPickItem, vscode.Disposab
         public readonly url: vscode.Uri,
         public readonly version: number,
         public readonly socketNS: string,
-        workspacePath_: string
+        workspacePath_: string,
+        public readonly remote: boolean
     ) {
         this.socket = new MCSocket(this, socketNS);
         this.workspacePath = vscode.Uri.file(workspacePath_);

@@ -11,6 +11,10 @@
 
 import * as vscode from "vscode";
 import * as request from "request-promise-native";
+import * as fs from "fs";
+import * as zlib from "zlib";
+import { promisify } from "util";
+
 
 import Project from "./Project";
 import ProjectCapabilities, { StartModes } from "./ProjectCapabilities";
@@ -22,6 +26,10 @@ import EndpointUtil, { ProjectEndpoints, Endpoint, MCEndpoints } from "../../con
 import { ILogResponse } from "../connection/SocketEvents";
 import { IMCTemplateData } from "../connection/UserProjectCreator";
 import Connection from "../connection/Connection";
+
+const statAsync = promisify(fs.stat);
+const readFileAsync = promisify(fs.readFile);
+const deflateAsync = promisify(zlib.deflate);
 
 type RequestFunc = (uri: string, options: request.RequestPromiseOptions) => request.RequestPromise<any>;
 
@@ -92,6 +100,32 @@ namespace Requester {
         if (MCUtil.isGoodStatusCode(response.statusCode)) {
             Log.d("Received good status from autoBuild request, new auto build is: " + newAutoBuild);
             project.setAutoBuild(newAutoBuild);
+        }
+    }
+
+    export async function uploadFile(project: Project, file: string): Promise<void> {
+        const projectPath = file.slice(project.localPath.path.length);
+        const stats = await statAsync(file);
+        Log.i(`Uploading ${file} to ${projectPath} in ${project.name}`);
+        // TODO - Upload directories. (Empty directories may be still matter to the build.)
+        if (stats.isFile()) {
+            const content = await readFileAsync(file, "utf-8");
+            // Log.i(`Content is:\n${content}\nStringified:\n${JSON.stringify(content)}`);
+            const strBuffer = await deflateAsync(JSON.stringify(content)) as Buffer;
+
+            const base64Compressed = strBuffer.toString("base64");
+
+            const body = {
+                path: projectPath,
+                msg: base64Compressed,
+                mTime: stats.mtimeMs,
+            };
+
+            const response = await doProjectRequest(project, ProjectEndpoints.UPLOAD, body, request.put, `Uploading ${projectPath}`);
+            if (MCUtil.isGoodStatusCode(response.statusCode)) {
+                Log.d("Received good status from upload request");
+            }
+            Log.i(`Uploaded ${file}`);
         }
     }
 
