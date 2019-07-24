@@ -108,25 +108,29 @@ namespace Requester {
         const stats = await statAsync(file);
         Log.i(`Uploading ${file} to ${projectPath} in ${project.name}`);
         // TODO - Upload directories. (Empty directories may be still matter to the build.)
+        const body: any = {
+            path: projectPath,
+            mTime: stats.mtime,
+        };
         if (stats.isFile()) {
+            body.isDirectory = false;
             const content = await readFileAsync(file, "utf-8");
             // Log.i(`Content is:\n${content}\nStringified:\n${JSON.stringify(content)}`);
             const strBuffer = await deflateAsync(JSON.stringify(content)) as Buffer;
-
             const base64Compressed = strBuffer.toString("base64");
-
-            const body = {
-                path: projectPath,
-                msg: base64Compressed,
-                mTime: stats.mtimeMs,
-            };
-
-            const response = await doProjectRequest(project, ProjectEndpoints.UPLOAD, body, request.put, `Uploading ${projectPath}`);
-            if (MCUtil.isGoodStatusCode(response.statusCode)) {
-                Log.d("Received good status from upload request");
-            }
-            Log.i(`Uploaded ${file}`);
+            body.msg = base64Compressed;
+        } else if (stats.isDirectory()) {
+            // Parent directories can be created when files are copied into them,
+            // this allows us to copy empty directories.
+            body.isDirectory = true;
+            body.msg = "";
         }
+
+        const response = await doProjectRequest(project, ProjectEndpoints.UPLOAD, body, request.put, `Uploading ${projectPath}`);
+        if (MCUtil.isGoodStatusCode(response.statusCode)) {
+            Log.d("Received good status from upload request");
+        }
+        Log.i(`Uploaded ${file}`);
     }
 
     export async function requestToggleEnablement(project: Project): Promise<void> {
