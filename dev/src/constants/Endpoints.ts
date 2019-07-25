@@ -28,6 +28,7 @@ export enum MCEndpoints {
     CREATE_FROM_TEMPLATE = "api/v1/projects/",
     PREBIND_VALIDATE = "api/v1/validate",
     BIND = "api/v1/projects/bind",
+    REMOTE_BIND_START = "api/v1/projects/remote-bind/start",
     REGISTRY = "api/v1/registry",
 }
 
@@ -45,6 +46,7 @@ export enum ProjectEndpoints {
     UNBIND = "unbind",
 
     UPLOAD = "remote-bind/upload",
+    REMOTE_BIND_END = "remote-bind/end",
 
     CAPABILITIES = "capabilities",
 }
